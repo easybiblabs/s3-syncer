@@ -36,7 +36,7 @@ $console
 ->setDefinition(array(
         new InputArgument('bucket', InputArgument::REQUIRED, 'bucket name'),
         new InputArgument('directory', InputArgument::REQUIRED, 'directory to sync'),
-        //new InputArgument('dryrun', InputArgument::OPTIONAL, 'dry run')
+        new InputOption('dry', null, null, 'dry run')
     ))
 ->setDescription('Sync contents of local directory to S3 bucket')
 ->setHelp(<<<EOF
@@ -51,6 +51,10 @@ EOF
 
         if ($input->getArgument('directory')) {
             $app['data.directory'] = $input->getArgument('directory');
+        }
+
+        if ($input->getOption('dry')) {
+            $app['data.dry'] = true;
         }
 
         $startedOut = false;
@@ -80,7 +84,7 @@ EOF
 
         try {
             $output->writeln(sprintf('<info>Syncing contents of "%s" (into "%s")</info>', $app['data.directory'], $app['data.bucket']));
-            $S3Syncer = new S3Syncer($app['data.bucket'], $app['data.directory']);
+            $S3Syncer = new S3Syncer($app['data.bucket'], $app['data.directory'], $app['data.dry']);
             $app['syncer'] = $S3Syncer->sync();
             $output->writeln('');
         } catch (\Exception $e) {
