@@ -1,0 +1,11 @@
+{
+    "name":         "S3-Syncer",
+    "description":  "sync files to S3",
+    "require":      {
+        "aws/aws-sdk-php": "2.3.*@dev",
+		"symfony/console": "2.3.*@dev"
+    },
+    "autoload": {
+        "psr-0": { "EasyBib\\Composer": "src/" }
+    }
+}

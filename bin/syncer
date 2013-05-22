@@ -1,0 +1,6 @@
+#!/usr/bin/env php
+<?php
+
+require_once __DIR__.'/../vendor/autoload.php';
+$console = require __DIR__.'/../src/console.php';
+$console->run();
