@@ -20,7 +20,7 @@
  * @version  GIT: <git_id>
  * @link     http://www.easybib.com
  */
-namespace EasyBib\Service;
+namespace EasyBib\S3Syncer\Service;
 
 /**
  * FileCollector
