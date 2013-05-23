@@ -23,10 +23,8 @@
 namespace EasyBib\Composer;
 
 use Aws\S3\S3Client;
-use Aws\Common\Aws;
-use Aws\S3\Enum\CannedAcl;
-use Aws\S3\Exception\S3Exception;
-use Guzzle\Http\EntityBody;
+use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Helper\ProgressHelper;
 
 /**
  * S3-Syncer
@@ -41,183 +39,126 @@ use Guzzle\Http\EntityBody;
 class S3Syncer
 {
     /**
+     * @var Uploader
+     */
+    private $uploader;
+
+    /**
+     * @var ProgressHelper
+     */
+    private $progress;
+
+    /**
+     * @var OutputInterface
+     */
+    private $output;
+
+    /**
      * @var S3Client $s3
      */
     private $s3;
 
-    /**
-     * @var string
-     */
+    private $startTime;
     private $bucketName = '';
-
-    /**
-     * @var string
-     */
-    private $directory = '';
+    private $workingDirectory = '';
+    private $archiveDirectory = '';
     private $userBuckets = array();
     private $fileList = array();
-    private $fileHashList = array();
-
-    private $startTime;
-    private $filesUploaded = 0;
-    private $filesAlreadyUploaded = 0;
-    private $uploadErrors = 0;
     private $s3Objects = array();
+    private $filesAlreadyUploaded = 0;
     private $errorMessages = array();
-    private $isDryRun = FALSE;
+    private $isDryRun = false;
 
     const VERSION = 0.1;
-    const MAX_FILE_SIZE_IN_BYTES = 4294967296;
 
     /**
      * construct
      *
-     * @param string $bucketName
-     * @param string $directory
-     * @param bool $dryRun
+     * @param OutputInterface $output
+     * @param ProgressHelper $progress
      *
-     * @return void
+     * @return \EasyBib\Composer\S3Syncer
      */
-    public function __construct($bucketName, $directory, $dryRun = false)
+    public function __construct(OutputInterface $output, ProgressHelper $progress)
     {
-        //get the $s3 object
-        $config = array();
-        $this->s3 = S3Client::factory($config);
+        $this->startTime = microtime(true);
+        $this->output = $output;
+        $this->progress = $progress;
+    }
 
-        $this->bucketName = $bucketName;
-        $this->directory = $directory;
-        $this->isDryRun = $dryRun;
+    /**
+     * setup
+     *
+     * @param string $satisJson        'path to json file'
+     * @param string $workingDirectory 'satis output directory'
+     * @param bool $dryRun             'run without uploading to s3'
+     *
+     * @return $this
+     * @throws \Exception
+     */
+    public function setup($satisJson, $workingDirectory, $dryRun = false)
+    {
+        $confJson = file_get_contents($satisJson);
+        $confArray = json_decode($confJson, true);
 
-        if (empty($bucketName) || empty($directory)) {
-            throw new \Exception('Missing bucket or directory');
-        } else {
-            echo "\n\nInitiated sync service with bucket {$this->bucketName}\n";
+        if (empty($confArray['archive'])) {
+            throw new \Exception('satis.json does not contain an archive configuration');
         }
+
+
+        $this->bucketName = $this->determineBucket($confArray['archive']['prefix-url']);
+        $this->archiveDirectory = ($confArray['archive']['directory']);
+        $this->workingDirectory = $workingDirectory;
+        $this->fileFormat = $confArray['archive']['format'];
+
+        if (empty($this->bucketName) || empty($this->workingDirectory)) {
+            throw new \Exception('Missing bucket or directory');
+        }
+
+        $this->isDryRun = $dryRun;
+        if ($this->isDryRun) {
+            $this->output->writeln('<info>WARNING: YOU ARE RUNNING IN DRY RUN MODE, NO FILES WILL BE UPLOADED TO S3.</info>');
+        }
+
+        $accessKeyId = 'AKIAJ5DA3DCUYBDLPC5Q';
+        $secret = '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';
+
+        //get s3 client
+        $config = array('key' => $accessKeyId, 'secret' => $secret);
+        $this->s3 = S3Client::factory($config);
 
         $this->loadUsersBuckets();
         $this->checkBucketIsValid();
 
-        if ($this->isDryRun) {
-            echo "WARNING: YOU ARE RUNNING IN DRY RUN MODE, NO FILES WILL BE UPLOADED TO S3.\n\n";
-        }
+        $this->uploader = new Uploader(
+            $this->s3,
+            $this->bucketName,
+            $this->isDryRun
+        );
 
-        //Retreive a list of files to be processed
-        $this->fileList = $this->getFileListFromDirectory($this->directory);
-        $totalFileCount = count($this->fileList);
-        if ($this->fileList === FALSE) {
-            throw new \Exception("Unable to get file list from directory.");
-        } else {
-            echo "\n\nTotal number of files found to process $totalFileCount \n";
-        }
+        return $this;
     }
 
     /**
-     * sync
+     * @param string $url
      *
-     * @return void
+     * @return array
      */
-    public function sync()
+    protected function determineBucket($url)
     {
-        $this->loadObjectsFromS3Bucket();
+        $hostName = parse_url($url, PHP_URL_HOST);
+        $path = substr(parse_url($url, PHP_URL_PATH), 1);
 
-        echo "Begining to upload....\n\n";
-        foreach ($this->fileList as $fileHash => $fileMeta) {
-            if (!isset($this->s3Objects[$fileMeta['file']])) {
-                $this->uploadFile($fileMeta);
-            } else {
-                echo "-";
-                $this->filesAlreadyUploaded++;
-            }
-        }
-    }
-
-    /**
-     * upload file
-     *
-     * @param $fileMeta
-     */
-    public function uploadFile($fileMeta)
-    {
-        echo ".";
-
-        $fullPath = $fileMeta['path'];
-        $fileHash = $fileMeta['hash'];
-        $fileName = $fileMeta['file'];
-        if ($this->filesUploaded % 100 == 0 && $this->filesUploaded != 0) {
-            echo "({$this->filesUploaded} / " . count($this->fileList) . ") \n";
+        $bucket = array();
+        if (!empty($path)) {
+            $bucket[] = dirname($path);
         }
 
-        if (!$this->isDryRun) {
-            try {
-                $this->s3->putObject(array(
-                    'Bucket' => $this->bucketName,
-                    'Key' => $fileName,
-                    'Body' => fopen($fullPath, 'r'),
-                    'ACL' => CannedAcl::AUTHENTICATED_READ
-                ));
-                $this->filesUploaded++;
-
-            } catch (S3Exception $e) {
-                $this->uploadErrors++;
-                echo "There was an error uploading the file.\n";
-            }
+        if ('s3.amazonaws.com' !== $hostName) {
+            // replace potential aws hostname
+            array_unshift($bucket, str_replace('.s3.amazonaws.com', '', $hostName));
         }
-    }
-
-    /**
-     * destruct method
-     */
-    public function __destruct()
-    {
-        $endTime = microtime(TRUE);
-        $totalTime = $endTime - $this->startTime;
-
-        $out = array();
-        $out[] = "************************* RESULTS ***********************\n ";
-        $out[] = "Total time: $totalTime (s)\n";
-        $out[] = "Total files examined: " . count($this->fileList) . "\n";
-        $out[] = "Total files uploaded to S3: {$this->filesUploaded}\n";
-        $out[] = "Total files ignored (cached in s3): {$this->filesAlreadyUploaded}\n";
-        $out[] = "Total upload errors: {$this->uploadErrors}\n";
-        $out[] = "***********************************************************\n ";
-
-        if (count($this->errorMessages) > 0) {
-            $out[] = implode("\n", $this->errorMessages);
-        }
-
-        $message = implode("\n", $out);
-        echo $message;
-    }
-
-    /**
-     * check if provided bucket exists
-     */
-    private function checkBucketIsValid()
-    {
-        //Make sure user specified a valid bucket.
-        if (!isset($this->userBuckets[$this->bucketName])) {
-            echo "\nUnable to find the bucket specified in your bucket list.  Did you mean one of the following?\n\n";
-            foreach ($this->userBuckets as $k => $v) {
-                echo "\t" . $v . "\n";
-            }
-            echo "\n";
-            exit;
-        }
-    }
-
-    /**
-     * load object from bucket
-     */
-    public function loadObjectsFromS3Bucket()
-    {
-        $iterator = $this->s3->getIterator('ListObjects', array(
-            'Bucket' => $this->bucketName
-        ));
-
-        foreach ($iterator as $fileName) {
-            $results[$fileName['Key']] = $fileName['Key'];
-        }
-        $this->s3Objects = $results;
+        return $bucket[0];
     }
 
     /**
@@ -246,58 +187,99 @@ class S3Syncer
     }
 
     /**
-     * get file list from local directory
-     *
-     * @param $dir
+     * check if we have a valid bucket
+     * @throws \Exception
+     */
+    private function checkBucketIsValid()
+    {
+        //Make sure user specified a valid bucket.
+        if (!isset($this->userBuckets[$this->bucketName])) {
+            $this->output->writeln("<error>Unable to find the bucket specified in your bucket list.</error>");
+            $this->output->writeln("<question>Did you mean one of the following?</question>");
+
+            foreach ($this->userBuckets as $name) {
+                $this->output->writeln("<info>$name</info>");
+            }
+            throw new \Exception('The bucketname was derrived from your satis.json.');
+        }
+    }
+
+    /**
+     * collect local files
      *
      * @return array|bool
      */
-    public function getFileListFromDirectory($dir)
+    public function collectFiles()
     {
-        // array to hold return value
-        $returnValue = array();
-        // add trailing slash if missing
-        if (substr($dir, -1) != "/") {
-            $dir .= "/";
-        }
-        // open pointer to directory and read list of files
-        $d = @dir($dir);
+        $fileCollector = new FileCollector();
+        $this->output->writeln("<info>Collecting local files...</info>");
+        $this->fileList = $fileCollector->collectFrom($this->workingDirectory, $this->archiveDirectory, $this->fileFormat);
+        return $this->fileList;
+    }
 
-        if ($d === FALSE) {
-            return FALSE;
+    /**
+     * load object from bucket
+     *
+     * @return array
+     */
+    public function loadObjectsFromS3Bucket()
+    {
+        $iterator = $this->s3->getIterator('ListObjects', array(
+            'Bucket' => $this->bucketName
+        ));
+        $results = array();
+        foreach ($iterator as $fileName) {
+            $results[$fileName['Key']] = $fileName['Key'];
         }
+        $this->s3Objects = $results;
+        return $this->s3Objects;
+    }
 
-        while (false !== ($entry = $d->read())) {
-            // skip hidden files
-            if ($entry[0] == ".") {
-                continue;
+    /**
+     * sync
+     *
+     * @return void
+     */
+    public function sync()
+    {
+        $this->collectFiles();
+        $this->loadObjectsFromS3Bucket();
+        $this->output->writeln("<info>Initiated sync service with bucket {$this->bucketName}</info>");
+
+        $this->progress->start($this->output, count($this->fileList));
+        foreach ($this->fileList as $filename => $fileMeta) {
+            if (!isset($this->s3Objects[$fileMeta['key']])) {
+                $this->uploader->uploadFile($fileMeta);
+            }else{
+                $this->filesAlreadyUploaded++;
             }
+            $this->progress->advance();
+        }
+        $this->progress->finish();
+        $this->report();
+    }
 
-            if (is_dir("$dir$entry")) {
-                if (is_readable("$dir$entry/")) {
-                    $returnValue = array_merge($returnValue, $this->getFileListFromDirectory("$dir$entry/", true));
-                }
+    /**
+     * report stats
+     *
+     * @return void
+     */
+    public function report(){
+        $endTime = microtime(true);
+        $totalTime = round($endTime - $this->startTime, 2);
 
-            } elseif (is_readable("$dir$entry")) {
-                $tFileName = "$dir$entry";
-                $hash = md5($tFileName);
-                $size = filesize($tFileName);
-                if ($size > self::MAX_FILE_SIZE_IN_BYTES) {
-                    $this->errorMessages[] = "The following file will not be processed as it exceeds the max file size: $tFileName";
-                    continue;
-                } else {
-                    $returnValue[$hash] = array('path' => $tFileName, 'file' => $entry, 'hash' => $hash);
-                    if (isset($this->fileHashList[$hash])) {
-                        $this->errorMessages[] = "WARNING: FOUND A HASH COLLISSION, DUPLICATE FILE:$tFileName ";
-                    } else {
-                        $this->fileHashList[$hash] = 1;
-                    }
-                }
+        $this->output->writeln("<comment>************************* RESULTS ***********************</comment>");
+        $this->output->writeln("<info>Total time: $totalTime (s)</info>");
+        $this->output->writeln("<info>Total files examined: </info>" . count($this->fileList));
+        $this->output->writeln("<info>Total files uploaded to S3: </info>{$this->uploader->filesUploaded}");
+        $this->output->writeln("<info>Total files ignored (cached in s3): </info>{$this->filesAlreadyUploaded}");
+
+        if (count($this->errorMessages) > 0) {
+            $this->output->writeln("<info>Total upload errors: </info>{$this->uploader->uploadErrors}");
+            foreach ($this->errorMessages as $message) {
+                $this->output->writeln("<error>{$message}</error>");
             }
         }
-        $d->close();
-
-        return $returnValue;
-
+        $this->output->writeln("<comment>*********************************************************</comment>");
     }
 }

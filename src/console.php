@@ -34,8 +34,8 @@ $app = array();
 $console
 ->register('sync')
 ->setDefinition(array(
-        new InputArgument('bucket', InputArgument::REQUIRED, 'bucket name'),
-        new InputArgument('directory', InputArgument::REQUIRED, 'directory to sync'),
+        new InputArgument('satis-json', InputArgument::REQUIRED, 'path to satis.json file'),
+        new InputArgument('directory', InputArgument::REQUIRED, 'satis output directory'),
         new InputOption('dry', null, null, 'dry run')
     ))
 ->setDescription('Sync contents of local directory to S3 bucket')
@@ -43,49 +43,15 @@ $console
 Help here
 EOF
     )
-->setCode(function (InputInterface $input, OutputInterface $output) use ($app) {
-
-        if ($input->getArgument('bucket')) {
-            $app['data.bucket'] = $input->getArgument('bucket');
-        }
-
-        if ($input->getArgument('directory')) {
-            $app['data.directory'] = $input->getArgument('directory');
-        }
-
-        if ($input->getOption('dry')) {
-            $app['data.dry'] = true;
-        }
-
-        $startedOut = false;
-        $startedErr = false;
-        $callback = null;
-        if (OutputInterface::VERBOSITY_VERBOSE === $output->getVerbosity()) {
-            $callback = function ($type, $buffer) use ($output, &$startedOut, &$startedErr) {
-                if ('err' === $type) {
-                    if (!$startedErr) {
-                        $output->write("\nERR| ");
-                        $startedErr = true;
-                        $startedOut = false;
-                    }
-
-                    $output->write(str_replace("\n", "\nERR| ", $buffer));
-                } else {
-                    if (!$startedOut) {
-                        $output->write("\nOUT| ");
-                        $startedOut = true;
-                        $startedErr = false;
-                    }
-
-                    $output->write(str_replace("\n", "\nOUT| ", $buffer));
-                }
-            };
-        }
-
+->setCode(function (InputInterface $input, OutputInterface $output) use ($app, $console) {
         try {
-            $output->writeln(sprintf('<info>Syncing contents of "%s" (into "%s")</info>', $app['data.directory'], $app['data.bucket']));
-            $S3Syncer = new S3Syncer($app['data.bucket'], $app['data.directory'], $app['data.dry']);
-            $app['syncer'] = $S3Syncer->sync();
+            $S3Syncer = new S3Syncer($output, $console->getHelperSet()->get('progress'));
+            $app['syncer'] = $S3Syncer->setup(
+                                 $input->getArgument('satis-json'),
+                                 $input->getArgument('directory'),
+                                 $input->getOption('dry')
+                             )->sync();
+
             $output->writeln('');
         } catch (\Exception $e) {
             $output->writeln("\n" . sprintf('<error>%s</error>', $e->getMessage()));
