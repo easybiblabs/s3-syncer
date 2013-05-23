@@ -13,19 +13,19 @@
  *
  * PHP Version 5
  *
- * @category Util
+ * @category Service
  * @package  Default
  * @author   Leander Damme <leander@wesrc.com>
  * @license  http://www.easybib.com/company/terms Terms of Service
  * @version  GIT: <git_id>
  * @link     http://www.easybib.com
  */
-namespace EasyBib\Composer;
+namespace EasyBib\Service;
 
 /**
  * FileCollector
  *
- * @category Util
+ * @category Service
  * @package  Default
  * @author   Leander Damme <leander@wesrc.com>
  * @license  http://www.easybib.com/company/terms Terms of Service

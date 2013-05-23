@@ -13,14 +13,14 @@
  *
  * PHP Version 5
  *
- * @category Util
+ * @category Service
  * @package  Default
  * @author   Leander Damme <leander@wesrc.com>
  * @license  http://www.easybib.com/company/terms Terms of Service
  * @version  GIT: <git_id>
  * @link     http://www.easybib.com
  */
-namespace EasyBib\Composer;
+namespace EasyBib\Service;
 
 use Aws\S3\S3Client;
 use Aws\S3\Enum\CannedAcl;
@@ -30,7 +30,7 @@ use Guzzle\Http\EntityBody;
 /**
  * S3 Uploader
  *
- * @category Util
+ * @category Service
  * @package  Default
  * @author   Leander Damme <leander@wesrc.com>
  * @license  http://www.easybib.com/company/terms Terms of Service
@@ -55,7 +55,6 @@ class Uploader
      * constructor
      *
      * @param S3Client $s3
-     * @param array    $fileList
      * @param string   $bucket
      * @param bool     $dryRun
      *

@@ -25,6 +25,8 @@ namespace EasyBib\Composer;
 use Aws\S3\S3Client;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Helper\ProgressHelper;
+use EasyBib\Service\Uploader;
+use EasyBib\Service\FileCollector;
 
 /**
  * S3-Syncer

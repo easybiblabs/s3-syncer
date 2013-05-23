@@ -7,7 +7,7 @@
     },
     "autoload": {
         "psr-0": {
-            "EasyBib\\Composer": "src/"
+            "EasyBib": "src/"
         }
     },
     "bin": [
