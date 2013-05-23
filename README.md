@@ -7,4 +7,6 @@ run ``composer install``inside this directory to install dependencies via Compos
 ### Usage
 once installed the S3-syncer can be used by executing bin/syncer
 
-to upload the contents of local folder to an S3 bucket run the syncer command with the following parameters: ``$ bin/syncer sync bucketname directoryname``
+to upload the contents of local folder to an S3 bucket run the syncer command with the following parameters: ``$ bin/syncer sync path-to-satis.json satis-output-directory``
+
+When using the ``--dry`` flag no files are uploaded to S3
