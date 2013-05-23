@@ -43,7 +43,7 @@ class FileCollector
      * @param string $archiveDir
      * @param string $extension
      *
-     * @throws \Exception
+     * @throws \UnexpectedValueException
      *
      * @return array|bool
      */
@@ -53,12 +53,12 @@ class FileCollector
         $realPath = realpath($path);
 
         if (empty($realPath)) {
-            throw new \Exception('path does not exist:' . $path);
+            throw new \UnexpectedValueException('path does not exist:' . $path);
         }
 
         $canCd = chdir($realPath);
         if (!$canCd) {
-            throw new \Exception('Cannot change into directory:' . $path);
+            throw new \UnexpectedValueException('Cannot change into directory:' . $path);
         }
 
         foreach (glob('*.' . $extension) as $filename) {

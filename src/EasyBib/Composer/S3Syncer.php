@@ -94,7 +94,7 @@ class S3Syncer
      * @param bool $dryRun             'run without uploading to s3'
      *
      * @return $this
-     * @throws \Exception
+     * @throws \InvalidArgumentException
      */
     public function setup($satisJson, $workingDirectory, $dryRun = false)
     {
@@ -102,7 +102,7 @@ class S3Syncer
         $confArray = json_decode($confJson, true);
 
         if (empty($confArray['archive'])) {
-            throw new \Exception('satis.json does not contain an archive configuration');
+            throw new \InvalidArgumentException('satis.json does not contain an archive configuration');
         }
 
 
@@ -112,7 +112,7 @@ class S3Syncer
         $this->fileFormat = $confArray['archive']['format'];
 
         if (empty($this->bucketName) || empty($this->workingDirectory)) {
-            throw new \Exception('Missing bucket or directory');
+            throw new \InvalidArgumentException('Missing bucket or directory');
         }
 
         $this->isDryRun = $dryRun;
@@ -164,7 +164,7 @@ class S3Syncer
     /**
      * load buckets of user
      *
-     * @throws \Exception
+     * @throws \RuntimeException
      */
     public function loadUsersBuckets()
     {
@@ -173,7 +173,7 @@ class S3Syncer
 
         // Success?
         if (!$result) {
-            throw new \Exception("Unable to retrieve users buckets");
+            throw new \RuntimeException("Unable to retrieve users buckets");
         }
 
         $buckets = $result['Buckets'];
@@ -188,7 +188,7 @@ class S3Syncer
 
     /**
      * check if we have a valid bucket
-     * @throws \Exception
+     * @throws \InvalidArgumentException
      */
     private function checkBucketIsValid()
     {
@@ -200,7 +200,7 @@ class S3Syncer
             foreach ($this->userBuckets as $name) {
                 $this->output->writeln("<info>$name</info>");
             }
-            throw new \Exception('The bucketname was derrived from your satis.json.');
+            throw new \InvalidArgumentException('The bucketname was derrived from your satis.json.');
         }
     }
 
