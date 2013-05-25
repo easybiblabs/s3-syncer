@@ -1,6 +1,21 @@
 #!/usr/bin/env php
 <?php
+$autoloaders = array(
+    __DIR__ . '/../vendor/autoload.php',
+    __DIR__ . '/../../../autoload.php',
+);
+foreach ($autoloaders as $autoloader) {
+    if (false === @file_exists($autoloader)) {
+        continue;
+    }
+    require $autoloader;
+    define('COMPOSER_AUTOLOAD_FOUND', $autoloader);
+    break;
+}
 
-require_once __DIR__.'/../vendor/autoload.php';
+if (!defined('COMPOSER_AUTOLOAD_FOUND')) {
+    die("Could not find an autoloader. Please run `./composer.phar install` - somewhere." . PHP_EOL);
+}
+
 $console = require __DIR__.'/../src/console.php';
 $console->run();
