@@ -1,5 +1,5 @@
 {
-    "hash": "3c94e897c67d5a60890e474c186fcb6b",
+    "hash": "d9da2e2717cc52784f0ccd403980d64f",
     "packages": [
         {
             "name": "aws/aws-sdk-php",
@@ -7,12 +7,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/aws/aws-sdk-php.git",
-                "reference": "de063a609964635fd93265a801d32ac2924395d3"
+                "reference": "a299b46693878b5a7ffaa30e236fbefe9113b6e0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/de063a609964635fd93265a801d32ac2924395d3",
-                "reference": "de063a609964635fd93265a801d32ac2924395d3",
+                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/a299b46693878b5a7ffaa30e236fbefe9113b6e0",
+                "reference": "a299b46693878b5a7ffaa30e236fbefe9113b6e0",
                 "shasum": ""
             },
             "require": {
@@ -66,7 +66,7 @@
                 "s3",
                 "sdk"
             ],
-            "time": "2013-05-16 16:52:36"
+            "time": "2013-05-23 17:48:31"
         },
         {
             "name": "guzzle/guzzle",
@@ -167,12 +167,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/Console.git",
-                "reference": "8b473549a03366e466ac033f7257cb827658853a"
+                "reference": "b549bdf72455c53a28a8b49a21d54a42f75aeb30"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/Console/zipball/8b473549a03366e466ac033f7257cb827658853a",
-                "reference": "8b473549a03366e466ac033f7257cb827658853a",
+                "url": "https://api.github.com/repos/symfony/Console/zipball/b549bdf72455c53a28a8b49a21d54a42f75aeb30",
+                "reference": "b549bdf72455c53a28a8b49a21d54a42f75aeb30",
                 "shasum": ""
             },
             "require": {
@@ -211,7 +211,7 @@
             ],
             "description": "Symfony Console Component",
             "homepage": "http://symfony.com",
-            "time": "2013-05-19 19:06:00"
+            "time": "2013-05-22 03:09:47"
         },
         {
             "name": "symfony/event-dispatcher",
