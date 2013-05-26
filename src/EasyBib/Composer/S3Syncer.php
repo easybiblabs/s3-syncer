@@ -62,6 +62,7 @@ class S3Syncer
 
     private $startTime;
     private $bucketName = '';
+    private $fileFormat;
     private $workingDirectory = '';
     private $archiveDirectory = '';
     private $userBuckets = array();
@@ -100,22 +101,20 @@ class S3Syncer
      */
     public function setup($satisJson, $workingDirectory, $dryRun = false)
     {
-        $confJson = file_get_contents($satisJson);
-        $confArray = json_decode($confJson, true);
-
-        if (empty($confArray['archive'])) {
-            throw new \InvalidArgumentException('satis.json does not contain an archive configuration');
+        if (empty($workingDirectory)) {
+            throw new \InvalidArgumentException('Missing working directory.');
         }
 
+        $configuration = new ConfigHandler(
+            new JsonFile($satisJson)
+        );
 
-        $this->bucketName = $this->determineBucket($confArray['archive']['prefix-url']);
-        $this->archiveDirectory = ($confArray['archive']['directory']);
+        $configuration->parse();
+
+        $this->bucketName = $configuration->getBucketName();
+        $this->archiveDirectory = $configuration->getDistDirectory();
         $this->workingDirectory = $workingDirectory;
-        $this->fileFormat = $confArray['archive']['format'];
-
-        if (empty($this->bucketName) || empty($this->workingDirectory)) {
-            throw new \InvalidArgumentException('Missing bucket or directory');
-        }
+        $this->fileFormat = $configuration->getFormat();
 
         $this->isDryRun = $dryRun;
         if ($this->isDryRun) {
@@ -141,28 +140,6 @@ class S3Syncer
         );
 
         return $this;
-    }
-
-    /**
-     * @param string $url
-     *
-     * @return array
-     */
-    protected function determineBucket($url)
-    {
-        $hostName = parse_url($url, PHP_URL_HOST);
-        $path = substr(parse_url($url, PHP_URL_PATH), 1);
-
-        $bucket = array();
-        if (!empty($path)) {
-            $bucket[] = dirname($path);
-        }
-
-        if ('s3.amazonaws.com' !== $hostName) {
-            // replace potential aws hostname
-            array_unshift($bucket, str_replace('.s3.amazonaws.com', '', $hostName));
-        }
-        return $bucket[0];
     }
 
     /**
@@ -197,15 +174,16 @@ class S3Syncer
     private function checkBucketIsValid()
     {
         //Make sure user specified a valid bucket.
-        if (!isset($this->userBuckets[$this->bucketName])) {
-            $this->output->writeln("<error>Unable to find the bucket specified in your bucket list.</error>");
-            $this->output->writeln("<question>Did you mean one of the following?</question>");
-
-            foreach ($this->userBuckets as $name) {
-                $this->output->writeln("<info>$name</info>");
-            }
-            throw new \InvalidArgumentException('The bucketname was derrived from your satis.json.');
+        if (isset($this->userBuckets[$this->bucketName])) {
+            return;
         }
+        $this->output->writeln("<error>Unable to find the bucket specified in your bucket list.</error>");
+        $this->output->writeln("<question>Did you mean one of the following?</question>");
+
+        foreach ($this->userBuckets as $name) {
+            $this->output->writeln("<info>$name</info>");
+        }
+        throw new \InvalidArgumentException('The bucketname was derrived from your satis.json.');
     }
 
     /**
@@ -268,7 +246,8 @@ class S3Syncer
      *
      * @return void
      */
-    public function report(){
+    public function report()
+    {
         $endTime = microtime(true);
         $totalTime = round($endTime - $this->startTime, 2);
 

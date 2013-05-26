@@ -3,6 +3,7 @@
     "description": "sync files to S3",
     "require": {
         "aws/aws-sdk-php": "2.3.*@dev",
+        "composer/composer": "@dev",
         "symfony/console": "2.3.*@dev"
     },
     "autoload": {
@@ -12,8 +13,5 @@
     },
     "bin": [
         "bin/syncer"
-    ],
-    "config": {
-        "bin-dir": "bin"
-    }
+    ]
 }
