@@ -122,8 +122,13 @@ class S3Syncer
             $this->output->writeln('<info>WARNING: YOU ARE RUNNING IN DRY RUN MODE, NO FILES WILL BE UPLOADED TO S3.</info>');
         }
 
-        //get s3 client
         $config = array();
+        $aKey = getenv('AWS_ACCESS_KEY');
+        $aSecret = getenv('AWS_SECRET_KEY');
+        if (isset($aKey) && isset($aSecret)) {
+            $config = array('key' => $aKey, 'secret' => $aSecret);
+        }
+        //get s3 client
         $this->s3 = S3Client::factory($config);
 
         $this->loadUsersBuckets();
