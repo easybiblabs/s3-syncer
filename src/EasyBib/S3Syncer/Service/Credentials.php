@@ -52,9 +52,9 @@ class Credentials
         }
 
         $awsConfig = $this->config->get('amazon-aws');
-        if (true === $awsConfig->has('key')) {
-            $this->awsAccessKey = $awsConfig->get('key');
-            $this->awsSecretKey = $awsConfig->get('secret');
+        if (isset($awsConfig['key']) && isset($awsConfig['secret'])) {
+            $this->awsAccessKey = $awsConfig['key'];
+            $this->awsSecretKey = $awsConfig['secret'];
         }
         return $this;
     }
