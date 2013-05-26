@@ -27,6 +27,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Helper\ProgressHelper;
 use EasyBib\S3Syncer\Service\Uploader;
 use EasyBib\S3Syncer\Service\FileCollector;
+use EasyBib\S3Syncer\Service\Credentials;
+use EasyBib\S3Syncer\Service\ConfigHandler;
+use Composer\Json\JsonFile;
 
 /**
  * S3-Syncer
@@ -121,12 +124,16 @@ class S3Syncer
             $this->output->writeln('<info>WARNING: YOU ARE RUNNING IN DRY RUN MODE, NO FILES WILL BE UPLOADED TO S3.</info>');
         }
 
+        $credentials = new Credentials(
+            \Composer\Factory::createConfig()
+        );
+
         $config = array();
-        $aKey = getenv('AWS_ACCESS_KEY');
-        $aSecret = getenv('AWS_SECRET_KEY');
-        if (isset($aKey) && isset($aSecret)) {
-            $config = array('key' => $aKey, 'secret' => $aSecret);
+        if (true === $credentials->determine()->hasCredentials()) {
+            $config['key'] = $credentials->getAccessKey();
+            $config['secret'] = $credentials->getSecretKey();
         }
+
         //get s3 client
         $this->s3 = S3Client::factory($config);
 
