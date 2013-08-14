@@ -18,4 +18,4 @@ if (!defined('COMPOSER_AUTOLOAD_FOUND')) {
 }
 
 $console = require __DIR__.'/../src/console.php';
-$console->run();
+exit($console->run());
