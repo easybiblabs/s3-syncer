@@ -27,8 +27,21 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\Console\Event\ConsoleCommandEvent;
+use Symfony\Component\Console\ConsoleEvents;
+
+$dispatcher = new EventDispatcher();
+$dispatcher->addListener(ConsoleEvents::COMMAND, function (ConsoleCommandEvent $event) {
+    if (true === extension_loaded('newrelic')) {
+        newrelic_set_appname($event->getCommand()->getApplication()->getName());
+        newrelic_name_transaction($event->getCommand()->getName());
+    }
+});
 
 $console = new Application('S3-Syncer', S3Syncer::VERSION);
+$console->setDispatcher($dispatcher);
+
 $app = array();
 
 $console
