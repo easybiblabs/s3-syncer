@@ -121,7 +121,9 @@ class S3Syncer
 
         $this->isDryRun = $dryRun;
         if ($this->isDryRun) {
-            $this->output->writeln('<info>WARNING: YOU ARE RUNNING IN DRY RUN MODE, NO FILES WILL BE UPLOADED TO S3.</info>');
+            $this->output->writeln(
+                '<info>WARNING: YOU ARE RUNNING IN DRY RUN MODE, NO FILES WILL BE UPLOADED TO S3.</info>'
+            );
         }
 
         $credentials = new Credentials(
@@ -202,7 +204,11 @@ class S3Syncer
     {
         $fileCollector = new FileCollector();
         $this->output->writeln("<info>Collecting local files...</info>");
-        $this->fileList = $fileCollector->collectFrom($this->workingDirectory, $this->archiveDirectory, $this->fileFormat);
+        $this->fileList = $fileCollector->collectFrom(
+            $this->workingDirectory,
+            $this->archiveDirectory,
+            $this->fileFormat
+        );
         return $this->fileList;
     }
 
@@ -239,7 +245,7 @@ class S3Syncer
         foreach ($this->fileList as $filename => $fileMeta) {
             if (!isset($this->s3Objects[$fileMeta['key']])) {
                 $this->uploader->uploadFile($fileMeta);
-            }else{
+            } else {
                 $this->filesAlreadyUploaded++;
             }
             $this->progress->advance();

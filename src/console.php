@@ -44,26 +44,22 @@ $console->setDispatcher($dispatcher);
 
 $app = array();
 
-$console
-->register('sync')
-->setDefinition(array(
+$console->register('sync')
+    ->setDefinition(array(
         new InputArgument('satis-json', InputArgument::REQUIRED, 'path to satis.json file'),
         new InputArgument('directory', InputArgument::REQUIRED, 'satis output directory'),
         new InputOption('dry', null, null, 'dry run')
     ))
-->setDescription('Sync contents of local directory to S3 bucket')
-->setHelp(<<<EOF
-Help here
-EOF
-    )
-->setCode(function (InputInterface $input, OutputInterface $output) use ($app, $console) {
+    ->setDescription('Sync contents of local directory to S3 bucket')
+    ->setHelp("Help here?")
+    ->setCode(function (InputInterface $input, OutputInterface $output) use ($app, $console) {
         try {
             $S3Syncer = new S3Syncer($output, $console->getHelperSet()->get('progress'));
             $app['syncer'] = $S3Syncer->setup(
-                                 $input->getArgument('satis-json'),
-                                 $input->getArgument('directory'),
-                                 $input->getOption('dry')
-                             )->sync();
+                $input->getArgument('satis-json'),
+                $input->getArgument('directory'),
+                $input->getOption('dry')
+            )->sync();
 
             $output->writeln('');
         } catch (\Exception $e) {

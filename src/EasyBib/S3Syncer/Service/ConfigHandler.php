@@ -56,7 +56,9 @@ class ConfigHandler
     public function parse()
     {
         if (false === $this->file->exists()) {
-            throw new \RuntimeException(sprintf("Configuration '%s' does not exist.", $satisJson));
+            throw new \RuntimeException(
+                sprintf("Configuration '%s' does not exist.", $this->file->getPath())
+            );
         }
         $confArray = $this->file->read();
         if (empty($confArray['archive'])) {

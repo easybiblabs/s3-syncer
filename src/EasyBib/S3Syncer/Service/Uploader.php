@@ -82,7 +82,7 @@ class Uploader
             return false;
         }
 
-        if($this->s3->doesObjectExist($this->bucket, $bucketKey)){
+        if ($this->s3->doesObjectExist($this->bucket, $bucketKey)) {
             return false;
         }
 
@@ -102,5 +102,4 @@ class Uploader
 
         return true;
     }
-
 }
