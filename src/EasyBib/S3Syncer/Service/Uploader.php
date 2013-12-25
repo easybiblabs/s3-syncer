@@ -25,7 +25,6 @@ namespace EasyBib\S3Syncer\Service;
 use Aws\S3\S3Client;
 use Aws\S3\Enum\CannedAcl;
 use Aws\S3\Exception\S3Exception;
-use Guzzle\Http\EntityBody;
 
 /**
  * S3 Uploader
