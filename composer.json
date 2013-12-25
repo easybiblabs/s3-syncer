@@ -1,6 +1,7 @@
 {
     "name": "easybib/s3-syncer",
     "description": "sync files to S3",
+    "license": "BSD-2-Clause",
     "require": {
         "aws/aws-sdk-php": "2.3.*@dev",
         "composer/composer": "@dev",
