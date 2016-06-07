@@ -1,7 +1,7 @@
 {
     "name": "easybib/s3-syncer",
     "description": "sync files to S3",
-    "license": "BSD-2-Clause",
+    "license": "Apache-2.0",
     "require": {
         "naderman/composer-aws": "*",
         "aws/aws-sdk-php": "*",
